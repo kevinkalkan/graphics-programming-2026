@@ -137,6 +137,8 @@ void ViewerApplication::InitializeModel()
     Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
     textureLoader.SetFlipVertical(true);
     m_model.GetMaterial(0).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_BaseColor.png")); 
+	m_model.GetMaterial(0).SetUniformValue("RoughnessTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png"));
+   
 }
 
 void ViewerApplication::InitializeCamera()

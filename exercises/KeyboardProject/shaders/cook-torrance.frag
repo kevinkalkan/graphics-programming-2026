@@ -8,8 +8,11 @@ out vec4 FragColor;
 
 uniform vec4 Color;
 uniform sampler2D ColorTexture;
+
+
 uniform float Roughness;
 uniform float Metallic;
+uniform sampler2D RoughnessTexture;
 
 uniform vec3 AmbientColor;
 uniform vec3 LightColor;
@@ -66,14 +69,14 @@ vec3 GetAmbientReflection(vec3 objectColor)
 	return AmbientColor * objectColor * 0.1f;
 }
 
-vec3 GetCookTorranceReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector) 
+vec3 GetCookTorranceReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector, float pixelRoughness) 
 {
 	vec3 halfVector = normalize(lightVector + viewVector);
 
 	vec3 F0 = mix(vec3(0.04f), objectColor, Metallic);
 
-	float NDF = DistributionGGX(normalVector, halfVector, Roughness);
-	float G   = GeometrySmith(normalVector, viewVector, lightVector, Roughness);
+	float NDF = DistributionGGX(normalVector, halfVector, pixelRoughness);
+	float G   = GeometrySmith(normalVector, viewVector, lightVector, pixelRoughness);
 	vec3 F    = FresnelSchlick(max(dot(halfVector, viewVector), 0.0), F0);
 
 	vec3 nominator    = NDF * G * F;
@@ -97,10 +100,14 @@ void main()
 	vec3 viewVector = normalize(CameraPosition - WorldPosition);
 	vec3 normalVector = normalize(WorldNormal);
 
-	vec3 finalColor = GetAmbientReflection(objectColor) + GetCookTorranceReflection(objectColor, lightVector, viewVector, normalVector);
+	float sampledRoughness = texture(RoughnessTexture, TexCoord).r;
+    float finalRoughness = Roughness * sampledRoughness;
+
+	vec3 finalColor = GetAmbientReflection(objectColor) + GetCookTorranceReflection(objectColor, lightVector, viewVector, normalVector, finalRoughness);
 
 	finalColor = finalColor / (finalColor + vec3(1.0));
 	finalColor = pow(finalColor, vec3(1.0/2.2));
 
 	FragColor = vec4(finalColor, texColor.a);
+	
 }
