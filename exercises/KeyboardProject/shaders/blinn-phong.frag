@@ -19,20 +19,36 @@ uniform vec3 LightColor;
 uniform vec3 LightPosition;
 uniform vec3 CameraPosition;
 
+uniform float Roughness;
+uniform float Metallic;
+
 vec3 GetAmbientReflection(vec3 objectColor)
 {
-	return AmbientColor * AmbientReflection * objectColor;
+	return AmbientColor * AmbientReflection * objectColor * (1.0 - Metallic);
 }
 
 vec3 GetDiffuseReflection(vec3 objectColor, vec3 lightVector, vec3 normalVector)
 {
-	return LightColor * DiffuseReflection * objectColor * max(dot(lightVector, normalVector), 0.0f);
+	return LightColor * DiffuseReflection * objectColor * max(dot(lightVector, normalVector), 0.0f) * (1.0 - Metallic);
 }
 
 vec3 GetSpecularReflection(vec3 lightVector, vec3 viewVector, vec3 normalVector)
 {
 	vec3 halfVector = normalize(lightVector + viewVector);
-	return LightColor * SpecularReflection * pow(max(dot(halfVector, normalVector), 0.0f), SpecularExponent);
+
+	// 1. SPECULAR COLOR
+    // Plastics reflect ~4% of light (a dim white highlight).
+    // Metals reflect their albedo color.
+
+	vec3 specularColor = mix(vec3(0.04f), LightColor, Metallic);
+
+	// 2. ROUGHNESS TO EXPONENT MAPPING
+    // Convert a 0-1 Roughness value into a Blinn-Phong Shininess exponent.
+    // 0.0 Roughness = ~1024 Exponent (Mirror)
+    // 1.0 Roughness = ~2 Exponent (Chalk/Matte)
+	float shininessExponent = mix(2.0f, 1024.0f, 1.0f - Roughness);
+
+	return LightColor * SpecularReflection * pow(max(dot(halfVector, normalVector), 0.0f), shininessExponent);
 }
 
 vec3 GetBlinnPhongReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector)

@@ -10,7 +10,7 @@
 
 ViewerApplication::ViewerApplication()
     : Application(1024, 1024, "Viewer demo")
-    , m_cameraPosition(0, 30, 30)
+    , m_cameraPosition(0, 1.0f, 1.0f)
     , m_cameraTranslationSpeed(20.0f)
     , m_cameraRotationSpeed(0.5f)
     , m_cameraEnabled(false)
@@ -20,7 +20,8 @@ ViewerApplication::ViewerApplication()
     , m_lightColor(0.0f)
     , m_lightIntensity(0.0f)
     , m_lightPosition(0.0f)
-    , m_specularExponentGrass(100.0f)
+	, m_roughness(0.0f)
+	, m_metallic(0.0f)
 {
 }
 
@@ -47,8 +48,6 @@ void ViewerApplication::Update()
     // Update camera controller
     UpdateCamera();
 
-    // Update specular exponent for grass material
-    m_model.GetMaterial(1).SetUniformValue("SpecularExponent", m_specularExponentGrass);
 }
 
 void ViewerApplication::Render()
@@ -56,7 +55,7 @@ void ViewerApplication::Render()
     Application::Render();
 
     // Clear color and depth
-    GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
+    GetDevice().Clear(true, Color(0.2f, 0.2f, 0.2f, 1.0f), true, 1.0f);
 
     m_model.Draw();
 
@@ -86,6 +85,9 @@ void ViewerApplication::InitializeModel()
     filteredUniforms.insert("ViewProjMatrix");
     filteredUniforms.insert("AmbientColor");
     filteredUniforms.insert("LightColor");
+    
+    filteredUniforms.insert("Roughness");
+    filteredUniforms.insert("Metallic");
 
     // Create reference material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgram, filteredUniforms);
@@ -104,7 +106,7 @@ void ViewerApplication::InitializeModel()
     ShaderProgram::Location cameraPositionLocation = shaderProgram->GetUniformLocation("CameraPosition");
     material->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
         {
-            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(0.1f)));
+            shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(1.0f)));
             shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
 
             // Set camera and light uniforms
@@ -112,6 +114,8 @@ void ViewerApplication::InitializeModel()
             shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
             shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
             shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
+            shaderProgram.SetUniform(shaderProgram.GetUniformLocation("Roughness"), m_roughness);
+            shaderProgram.SetUniform(shaderProgram.GetUniformLocation("Metallic"), m_metallic);
         });
 
     // Configure loader
@@ -122,14 +126,12 @@ void ViewerApplication::InitializeModel()
     loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
 
     // Load model
-    m_model = loader.Load("models/mill/Mill.obj");
+    m_model = loader.Load("models/keyboard/Keyboard2.obj");
 
     // Load and set textures
     Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
     textureLoader.SetFlipVertical(true);
-    m_model.GetMaterial(0).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/mill/Ground_shadow.jpg"));
-    m_model.GetMaterial(1).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/mill/Ground_color.jpg"));
-    m_model.GetMaterial(2).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/mill/MillCat_color.jpg"));
+    m_model.GetMaterial(0).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_BaseColor.png")); 
 }
 
 void ViewerApplication::InitializeCamera()
@@ -145,10 +147,17 @@ void ViewerApplication::InitializeCamera()
 void ViewerApplication::InitializeLights()
 {
     // Initialize light variables
-    m_ambientColor = glm::vec3(0.25f);
+    m_ambientColor = glm::vec3(1.0f);
     m_lightColor = glm::vec3(1.0f);
     m_lightIntensity = 1.0f;
     m_lightPosition = glm::vec3(-10.0f, 20.0f, 10.0f);
+}
+
+void ViewerApplication::InitializeMaterials()
+{
+    // Initialize material variables
+    m_roughness = 0.3f;
+    m_metallic = 0.0f;
 }
 
 void ViewerApplication::RenderGUI()
@@ -162,8 +171,11 @@ void ViewerApplication::RenderGUI()
     ImGui::ColorEdit3("Light color", &m_lightColor[0]);
     ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
     ImGui::Separator();
-    ImGui::DragFloat("Specular exponent (grass)", &m_specularExponentGrass, 1.0f, 0.0f, 1000.0f);
 
+	// Add debug controls for material properties
+    ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f);
+    ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f);
+	ImGui::Separator();
     m_imGui.EndFrame();
 }
 
@@ -196,14 +208,14 @@ void ViewerApplication::UpdateCamera()
         glm::vec2 inputTranslation(0.0f);
 
         if (window.IsKeyPressed(GLFW_KEY_A))
-            inputTranslation.x = -1.0f;
+            inputTranslation.x = -0.2f;
         else if (window.IsKeyPressed(GLFW_KEY_D))
-            inputTranslation.x = 1.0f;
+            inputTranslation.x = 0.2f;
 
         if (window.IsKeyPressed(GLFW_KEY_W))
-            inputTranslation.y = 1.0f;
+            inputTranslation.y = 0.2f;
         else if (window.IsKeyPressed(GLFW_KEY_S))
-            inputTranslation.y = -1.0f;
+            inputTranslation.y = -0.2f;
 
         inputTranslation *= m_cameraTranslationSpeed;
         inputTranslation *= GetDeltaTime();

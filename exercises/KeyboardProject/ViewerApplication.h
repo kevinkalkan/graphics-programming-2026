@@ -23,6 +23,7 @@ private:
     void InitializeModel();
     void InitializeCamera();
     void InitializeLights();
+	void InitializeMaterials();
 
     void UpdateCamera();
 
@@ -52,6 +53,7 @@ private:
     float m_lightIntensity;
     glm::vec3 m_lightPosition;
 
-    // Specular exponent debug
-    float m_specularExponentGrass;
+	// Add material variables
+    float m_roughness;
+	float m_metallic;
 };
