@@ -1,0 +1,106 @@
+#version 330 core
+
+in vec3 WorldPosition;
+in vec3 WorldNormal;
+in vec2 TexCoord;
+
+out vec4 FragColor;
+
+uniform vec4 Color;
+uniform sampler2D ColorTexture;
+uniform float Roughness;
+uniform float Metallic;
+
+uniform vec3 AmbientColor;
+uniform vec3 LightColor;
+uniform vec3 LightPosition;
+uniform vec3 CameraPosition;
+
+
+const float PI = 3.14159265359;
+
+float DistributionGGX(vec3 normalVector, vec3 halfVector, float roughness) 
+{
+	float a = roughness * roughness;
+	float a2 = a * a;
+	float NdotH = max(dot(normalVector, halfVector), 0.0);
+	float NdotH2 = NdotH * NdotH;
+
+	float nom   = a2;
+	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+	denom = PI * denom * denom;
+
+	return nom / denom;
+}
+
+float GeometrySchlickGGX(float NdotV, float roughness) 
+{
+	float r = (roughness + 1.0);
+	float k = (r * r) / 8.0;
+
+	float nom   = NdotV;
+	float denom = NdotV * (1.0 - k) + k;
+
+	return nom / denom;
+
+}
+
+float GeometrySmith(vec3 normalVector, vec3 viewVector, vec3 lightVector, float roughness) 
+{	
+	float NdotV = max(dot(normalVector, viewVector), 0.0);
+	float NdotL = max(dot(normalVector, lightVector), 0.0);
+	float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+	float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+	return ggx1 * ggx2;
+
+}
+
+vec3 FresnelSchlick(float cosTheta, vec3 F0) 
+{	
+	return F0 + (1.0 - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+}
+
+vec3 GetAmbientReflection(vec3 objectColor)
+{
+	return AmbientColor * objectColor * 0.1f;
+}
+
+vec3 GetCookTorranceReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector) 
+{
+	vec3 halfVector = normalize(lightVector + viewVector);
+
+	vec3 F0 = mix(vec3(0.04f), objectColor, Metallic);
+
+	float NDF = DistributionGGX(normalVector, halfVector, Roughness);
+	float G   = GeometrySmith(normalVector, viewVector, lightVector, Roughness);
+	vec3 F    = FresnelSchlick(max(dot(halfVector, viewVector), 0.0), F0);
+
+	vec3 nominator    = NDF * G * F;
+	float denominator = 4.0 * max(dot(normalVector, viewVector), 0.0) * max(dot(normalVector, lightVector), 0.0) + 0.001;
+	vec3 specular = nominator / denominator;
+
+	vec3 kS = F;
+	vec3 kD = vec3(1.0) - kS;
+	kD *= 1.0 - Metallic;
+
+	float NdotL = max(dot(normalVector, lightVector), 0.0);
+	return (kD * objectColor / PI + specular) * LightColor * NdotL;
+}
+
+void main()
+{
+	vec4 texColor = texture(ColorTexture, TexCoord);
+	vec3 objectColor = pow(Color.rgb * texColor.rgb, vec3(2.2)); 
+
+	vec3 lightVector = normalize(LightPosition - WorldPosition);
+	vec3 viewVector = normalize(CameraPosition - WorldPosition);
+	vec3 normalVector = normalize(WorldNormal);
+
+	vec3 finalColor = GetAmbientReflection(objectColor) + GetCookTorranceReflection(objectColor, lightVector, viewVector, normalVector);
+
+	finalColor = finalColor / (finalColor + vec3(1.0));
+	finalColor = pow(finalColor, vec3(1.0/2.2));
+
+	FragColor = vec4(finalColor, texColor.a);
+}
