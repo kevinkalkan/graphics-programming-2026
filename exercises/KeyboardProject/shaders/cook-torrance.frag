@@ -1,8 +1,9 @@
 #version 330 core
 
 in vec3 WorldPosition;
-in vec3 WorldNormal;
+in vec3 WorldTangent;
 in vec2 TexCoord;
+in vec3 WorldNormal;
 
 out vec4 FragColor;
 
@@ -13,6 +14,7 @@ uniform sampler2D ColorTexture;
 uniform float Roughness;
 uniform float Metallic;
 uniform sampler2D RoughnessTexture;
+uniform sampler2D NormalTexture;
 
 uniform vec3 AmbientColor;
 uniform vec3 LightColor;
@@ -96,12 +98,21 @@ void main()
 	vec4 texColor = texture(ColorTexture, TexCoord);
 	vec3 objectColor = pow(Color.rgb * texColor.rgb, vec3(2.2)); 
 
+	float finalRoughness = Roughness * texture(RoughnessTexture, TexCoord).r;
+
+	vec3 N = normalize(WorldNormal);
+	vec3 T = normalize(WorldTangent);
+	T = normalize(T - dot(T, N) * N);
+	vec3 B = cross(N, T);
+	mat3 TBN = mat3(T, B, N);
+
+	vec3 normalMap = texture(NormalTexture, TexCoord).rgb;
+	normalMap = normalize(normalMap * 2.0 - 1.0);
+
+	vec3 normalVector = normalize(TBN * normalMap);
+
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	vec3 viewVector = normalize(CameraPosition - WorldPosition);
-	vec3 normalVector = normalize(WorldNormal);
-
-	float sampledRoughness = texture(RoughnessTexture, TexCoord).r;
-    float finalRoughness = Roughness * sampledRoughness;
 
 	vec3 finalColor = GetAmbientReflection(objectColor) + GetCookTorranceReflection(objectColor, lightVector, viewVector, normalVector, finalRoughness);
 

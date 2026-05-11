@@ -130,6 +130,9 @@ void ViewerApplication::InitializeModel()
     loader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
     loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
 
+    //Normal maps
+	loader.SetMaterialAttribute(VertexAttribute::Semantic::Tangent, "VertexTangent");
+
     // Load model
     m_model = loader.Load("models/keyboard/Keyboard2.obj");
 
@@ -138,6 +141,7 @@ void ViewerApplication::InitializeModel()
     textureLoader.SetFlipVertical(true);
     m_model.GetMaterial(0).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_BaseColor.png")); 
 	m_model.GetMaterial(0).SetUniformValue("RoughnessTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png"));
+	m_model.GetMaterial(0).SetUniformValue("NormalTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Normal.png"));
    
 }
 
