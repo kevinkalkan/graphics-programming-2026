@@ -9,3 +9,10 @@ source_group("Shaders" FILES ${shaders})
 
 add_executable(${TARGETNAME} ${target_inc} ${target_src} ${shaders})
 target_link_libraries(${TARGETNAME} ${libraries})
+add_custom_command(TARGET ${TARGETNAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+        "$<TARGET_FILE_DIR:${TARGETNAME}>/shaders"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/models"
+        "$<TARGET_FILE_DIR:${TARGETNAME}>/models"

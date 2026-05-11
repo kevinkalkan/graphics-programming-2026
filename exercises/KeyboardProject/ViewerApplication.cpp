@@ -32,9 +32,11 @@ void ViewerApplication::Initialize()
     // Initialize DearImGUI
     m_imGui.Initialize(GetMainWindow());
 
+    InitializeMaterials();
     InitializeModel();
     InitializeCamera();
     InitializeLights();
+	
 
     DeviceGL& device = GetDevice();
     device.EnableFeature(GL_DEPTH_TEST);
@@ -74,8 +76,8 @@ void ViewerApplication::Cleanup()
 void ViewerApplication::InitializeModel()
 {
     // Load and build shader
-    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/blinn-phong.vert");
-    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/blinn-phong.frag");
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/cook-torrance.vert");
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/cook-torrance.frag");
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
@@ -85,9 +87,8 @@ void ViewerApplication::InitializeModel()
     filteredUniforms.insert("ViewProjMatrix");
     filteredUniforms.insert("AmbientColor");
     filteredUniforms.insert("LightColor");
-    
-    filteredUniforms.insert("Roughness");
-    filteredUniforms.insert("Metallic");
+	filteredUniforms.insert("LightPosition");
+	filteredUniforms.insert("CameraPosition");
 
     // Create reference material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgram, filteredUniforms);
@@ -95,7 +96,9 @@ void ViewerApplication::InitializeModel()
     material->SetUniformValue("AmbientReflection", 1.0f);
     material->SetUniformValue("DiffuseReflection", 1.0f);
     material->SetUniformValue("SpecularReflection", 1.0f);
-    material->SetUniformValue("SpecularExponent", 100.0f);
+    material->SetUniformValue("SpecularExponent", 1.0f);
+    material->SetUniformValue("Roughness", m_roughness);
+    material->SetUniformValue("Metallic", m_metallic);
 
     // Setup function
     ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
@@ -104,6 +107,9 @@ void ViewerApplication::InitializeModel()
     ShaderProgram::Location lightColorLocation = shaderProgram->GetUniformLocation("LightColor");
     ShaderProgram::Location lightPositionLocation = shaderProgram->GetUniformLocation("LightPosition");
     ShaderProgram::Location cameraPositionLocation = shaderProgram->GetUniformLocation("CameraPosition");
+	ShaderProgram::Location roughnessLocation = shaderProgram->GetUniformLocation("Roughness");
+	ShaderProgram::Location metallicLocation = shaderProgram->GetUniformLocation("Metallic");
+
     material->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
         {
             shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(1.0f)));
@@ -114,8 +120,7 @@ void ViewerApplication::InitializeModel()
             shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
             shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
             shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
-            shaderProgram.SetUniform(shaderProgram.GetUniformLocation("Roughness"), m_roughness);
-            shaderProgram.SetUniform(shaderProgram.GetUniformLocation("Metallic"), m_metallic);
+
         });
 
     // Configure loader
@@ -172,9 +177,10 @@ void ViewerApplication::RenderGUI()
     ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
     ImGui::Separator();
 
-	// Add debug controls for material properties
-    ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f);
-    ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f);
+    if (ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f))
+        m_model.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
+    if (ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f))
+        m_model.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
 	ImGui::Separator();
     m_imGui.EndFrame();
 }
