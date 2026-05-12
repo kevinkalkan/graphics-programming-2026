@@ -23,6 +23,7 @@ uniform vec3 CameraPosition;
 uniform float Time;
 uniform sampler2D EmissiveTexture;
 uniform int EffectMode;
+uniform float WaveSpeed;
 
 const float PI = 3.14159265359;
 
@@ -137,9 +138,8 @@ void main()
 	}
 	else if (EffectMode == 2) // Rainbow effect
 	{
-		float waveSpeed = 1.5;
 		float waveDensity = 1.0;
-		float currentHue = (TexCoord.x * waveDensity) - (Time * waveSpeed);
+		float currentHue = (TexCoord.x * waveDensity) - (Time * WaveSpeed);
 		glowColor = hsv2rgb(vec3(currentHue, 1.0, 1.0)) * 0.5;
 	}
 

@@ -27,6 +27,7 @@ ViewerApplication::ViewerApplication()
     , m_time(0.0f)
 	, m_effectMode(0)
 	, m_effectToggled(false)
+	, m_waveSpeed(0.5f)
 {
 }
 
@@ -84,6 +85,7 @@ void ViewerApplication::Update()
         m_modelPBR.GetMaterial(i).SetUniformValue("Metallic", m_metallic);
         m_modelPBR.GetMaterial(i).SetUniformValue("Time", time);
         m_modelPBR.GetMaterial(i).SetUniformValue("EffectMode", m_effectMode);
+        m_modelPBR.GetMaterial(i).SetUniformValue("WaveSpeed", m_waveSpeed);
     }
    
 }
@@ -246,6 +248,8 @@ void ViewerApplication::RenderGUI()
     ImGui::RadioButton("Off", &m_effectMode, 0);
     ImGui::RadioButton("Breathing", &m_effectMode, 1);
     ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);
+    if (ImGui::SliderFloat("Wave Speed", &m_waveSpeed, 0.0f, 5.0f))
+        m_modelPBR.GetMaterial(0).SetUniformValue("WaveSpeed", m_waveSpeed);
     ImGui::Separator();
 
     m_imGui.EndFrame();
