@@ -24,6 +24,7 @@ private:
     void InitializeCamera();
     void InitializeLights();
 	void InitializeMaterials();
+    Model LoadModelWithShader(const char* vertPath, const char* fragPath);
 
     void UpdateCamera();
 
@@ -45,7 +46,8 @@ private:
     bool m_cameraEnablePressed;
 
     // Loaded model
-    Model m_model;
+    Model m_modelPBR;
+    Model m_modelBlinn;
 
     // Add light variables
     glm::vec3 m_ambientColor;
@@ -56,4 +58,8 @@ private:
 	// Add material variables
     float m_roughness;
 	float m_metallic;
+
+    // Shader modes
+	int m_shaderMode;
+	bool m_modeToggled;
 };

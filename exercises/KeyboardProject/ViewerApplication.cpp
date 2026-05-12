@@ -22,6 +22,8 @@ ViewerApplication::ViewerApplication()
     , m_lightPosition(0.0f)
 	, m_roughness(0.0f)
 	, m_metallic(0.0f)
+	, m_shaderMode(0)
+	, m_modeToggled(false)
 {
 }
 
@@ -33,10 +35,9 @@ void ViewerApplication::Initialize()
     m_imGui.Initialize(GetMainWindow());
 
     InitializeMaterials();
-    InitializeModel();
     InitializeCamera();
     InitializeLights();
-	
+    InitializeModel();
 
     DeviceGL& device = GetDevice();
     device.EnableFeature(GL_DEPTH_TEST);
@@ -50,6 +51,19 @@ void ViewerApplication::Update()
     // Update camera controller
     UpdateCamera();
 
+    Window& window = GetMainWindow();
+    bool mPressed = window.IsKeyPressed(GLFW_KEY_M);
+
+    if (mPressed && !m_modeToggled)
+    {
+        // Toggle between 0 (PBR) and 1 (Blinn-Phong)
+        m_shaderMode = (m_shaderMode == 0) ? 1 : 0;
+    }
+    m_modeToggled = mPressed;
+
+    // Keep PBR sliders updated dynamically
+    m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
+    m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
 }
 
 void ViewerApplication::Render()
@@ -59,7 +73,14 @@ void ViewerApplication::Render()
     // Clear color and depth
     GetDevice().Clear(true, Color(0.2f, 0.2f, 0.2f, 1.0f), true, 1.0f);
 
-    m_model.Draw();
+    if (m_shaderMode == 0)
+    {
+        m_modelPBR.Draw();
+    }
+    else
+    {
+        m_modelBlinn.Draw();
+    }
 
     // Render the debug user interface
     RenderGUI();
@@ -73,78 +94,82 @@ void ViewerApplication::Cleanup()
     Application::Cleanup();
 }
 
-void ViewerApplication::InitializeModel()
+Model ViewerApplication::LoadModelWithShader(const char* vertPath, const char* fragPath)
 {
-    // Load and build shader
-    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, "shaders/cook-torrance.vert");
-    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, "shaders/cook-torrance.frag");
+    Shader vertexShader = ShaderLoader::Load(Shader::VertexShader, vertPath);
+    Shader fragmentShader = ShaderLoader::Load(Shader::FragmentShader, fragPath);
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
-    // Filter out uniforms that are not material properties
     ShaderUniformCollection::NameSet filteredUniforms;
     filteredUniforms.insert("WorldMatrix");
     filteredUniforms.insert("ViewProjMatrix");
     filteredUniforms.insert("AmbientColor");
     filteredUniforms.insert("LightColor");
-	filteredUniforms.insert("LightPosition");
-	filteredUniforms.insert("CameraPosition");
+    filteredUniforms.insert("LightPosition");
+    filteredUniforms.insert("CameraPosition");
 
-    // Create reference material
     std::shared_ptr<Material> material = std::make_shared<Material>(shaderProgram, filteredUniforms);
-    material->SetUniformValue("Color", glm::vec4(1.0f));
+
+    // Add default variables for loader
     material->SetUniformValue("AmbientReflection", 1.0f);
     material->SetUniformValue("DiffuseReflection", 1.0f);
     material->SetUniformValue("SpecularReflection", 1.0f);
     material->SetUniformValue("SpecularExponent", 1.0f);
-    material->SetUniformValue("Roughness", m_roughness);
-    material->SetUniformValue("Metallic", m_metallic);
 
-    // Setup function
     ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
     ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
     ShaderProgram::Location ambientColorLocation = shaderProgram->GetUniformLocation("AmbientColor");
     ShaderProgram::Location lightColorLocation = shaderProgram->GetUniformLocation("LightColor");
     ShaderProgram::Location lightPositionLocation = shaderProgram->GetUniformLocation("LightPosition");
     ShaderProgram::Location cameraPositionLocation = shaderProgram->GetUniformLocation("CameraPosition");
-	ShaderProgram::Location roughnessLocation = shaderProgram->GetUniformLocation("Roughness");
-	ShaderProgram::Location metallicLocation = shaderProgram->GetUniformLocation("Metallic");
 
     material->SetShaderSetupFunction([=](ShaderProgram& shaderProgram)
         {
             shaderProgram.SetUniform(worldMatrixLocation, glm::scale(glm::vec3(1.0f)));
             shaderProgram.SetUniform(viewProjMatrixLocation, m_camera.GetViewProjectionMatrix());
-
-            // Set camera and light uniforms
             shaderProgram.SetUniform(ambientColorLocation, m_ambientColor);
             shaderProgram.SetUniform(lightColorLocation, m_lightColor * m_lightIntensity);
             shaderProgram.SetUniform(lightPositionLocation, m_lightPosition);
             shaderProgram.SetUniform(cameraPositionLocation, m_cameraPosition);
-
         });
 
-    // Configure loader
     ModelLoader loader(material);
     loader.SetCreateMaterials(true);
     loader.SetMaterialAttribute(VertexAttribute::Semantic::Position, "VertexPosition");
     loader.SetMaterialAttribute(VertexAttribute::Semantic::Normal, "VertexNormal");
     loader.SetMaterialAttribute(VertexAttribute::Semantic::TexCoord0, "VertexTexCoord");
+    loader.SetMaterialAttribute(VertexAttribute::Semantic::Tangent, "VertexTangent");
 
-    //Normal maps
-	loader.SetMaterialAttribute(VertexAttribute::Semantic::Tangent, "VertexTangent");
-
-    // Load model
-    m_model = loader.Load("models/keyboard/Keyboard2.obj");
-
-    // Load and set textures
-    Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
-    textureLoader.SetFlipVertical(true);
-    m_model.GetMaterial(0).SetUniformValue("ColorTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_BaseColor.png")); 
-	m_model.GetMaterial(0).SetUniformValue("RoughnessTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png"));
-	m_model.GetMaterial(0).SetUniformValue("NormalTexture", textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Normal.png"));
-   
+    return loader.Load("models/keyboard/Keyboard2.obj");
 }
 
+void ViewerApplication::InitializeModel()
+{
+    // 1. Load the two models using the helper function
+    m_modelPBR = LoadModelWithShader("shaders/cook-torrance.vert", "shaders/cook-torrance.frag");
+    m_modelBlinn = LoadModelWithShader("shaders/blinn-phong.vert", "shaders/blinn-phong.frag");
+
+    // 2. Load textures
+    Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
+    textureLoader.SetFlipVertical(true);
+    auto colorTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_BaseColor.png");
+    auto roughnessTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png");
+    auto normalTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Normal.png");
+
+    // 3. Apply variables to PBR Model
+    m_modelPBR.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
+    m_modelPBR.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
+    m_modelPBR.GetMaterial(0).SetUniformValue("NormalTexture", normalTexture);
+    m_modelPBR.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
+    m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
+    m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
+
+    // 4. Apply variables to Blinn-Phong Model
+    m_modelBlinn.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
+    m_modelBlinn.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
+    m_modelBlinn.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
+}
 void ViewerApplication::InitializeCamera()
 {
     // Set view matrix, from the camera position looking to the origin
@@ -184,10 +209,16 @@ void ViewerApplication::RenderGUI()
     ImGui::Separator();
 
     if (ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f))
-        m_model.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
-    if (ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f))
-        m_model.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
-	ImGui::Separator();
+        m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
+	if (ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f))
+        m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
+    ImGui::Separator();
+
+    ImGui::Text("Shader Swap (Press 'M')");
+    ImGui::RadioButton("Cook-Torrance (PBR)", &m_shaderMode, 0);
+    ImGui::RadioButton("Blinn-Phong", &m_shaderMode, 1);
+    ImGui::Separator();
+
     m_imGui.EndFrame();
 }
 

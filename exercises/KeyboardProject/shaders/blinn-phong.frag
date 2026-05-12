@@ -8,6 +8,7 @@ out vec4 FragColor;
 
 uniform vec4 Color;
 uniform sampler2D ColorTexture;
+uniform sampler2D RoughnessTexture;
 
 uniform float AmbientReflection;
 uniform float DiffuseReflection;
@@ -19,43 +20,27 @@ uniform vec3 LightColor;
 uniform vec3 LightPosition;
 uniform vec3 CameraPosition;
 
-uniform float Roughness;
-uniform float Metallic;
-
 vec3 GetAmbientReflection(vec3 objectColor)
 {
-	return AmbientColor * AmbientReflection * objectColor * (1.0 - Metallic);
+	return AmbientColor * AmbientReflection * objectColor;
 }
 
 vec3 GetDiffuseReflection(vec3 objectColor, vec3 lightVector, vec3 normalVector)
 {
-	return LightColor * DiffuseReflection * objectColor * max(dot(lightVector, normalVector), 0.0f) * (1.0 - Metallic);
+	return LightColor * DiffuseReflection * objectColor * max(dot(lightVector, normalVector), 0.0f);
 }
 
-vec3 GetSpecularReflection(vec3 lightVector, vec3 viewVector, vec3 normalVector)
+vec3 GetSpecularReflection(vec3 lightVector, vec3 viewVector, vec3 normalVector, float shininess)
 {
 	vec3 halfVector = normalize(lightVector + viewVector);
-
-	// 1. SPECULAR COLOR
-    // Plastics reflect ~4% of light (a dim white highlight).
-    // Metals reflect their albedo color.
-
-	vec3 specularColor = mix(vec3(0.04f), LightColor, Metallic);
-
-	// 2. ROUGHNESS TO EXPONENT MAPPING
-    // Convert a 0-1 Roughness value into a Blinn-Phong Shininess exponent.
-    // 0.0 Roughness = ~1024 Exponent (Mirror)
-    // 1.0 Roughness = ~2 Exponent (Chalk/Matte)
-	float shininessExponent = mix(2.0f, 1024.0f, 1.0f - Roughness);
-
-	return LightColor * SpecularReflection * pow(max(dot(halfVector, normalVector), 0.0f), shininessExponent);
+	return LightColor * SpecularReflection * pow(max(dot(halfVector, normalVector), 0.0f), shininess);
 }
 
-vec3 GetBlinnPhongReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector)
+vec3 GetBlinnPhongReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector, float shininess)
 {
 	return GetAmbientReflection(objectColor)
 		 + GetDiffuseReflection(objectColor, lightVector, normalVector)
-		 + GetSpecularReflection(lightVector, viewVector, normalVector);
+		 + GetSpecularReflection(lightVector, viewVector, normalVector, shininess);
 }
 
 void main()
@@ -64,5 +49,8 @@ void main()
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	vec3 viewVector = normalize(CameraPosition - WorldPosition);
 	vec3 normalVector = normalize(WorldNormal);
-	FragColor = vec4(GetBlinnPhongReflection(objectColor.rgb, lightVector, viewVector, normalVector), 1.0f);
+
+	float textureRoughness = texture(RoughnessTexture, TexCoord).r;
+	float shininess = exp2(10.0f * (1.0f - textureRoughness));
+	FragColor = vec4(GetBlinnPhongReflection(objectColor.rgb, lightVector, viewVector, normalVector, shininess), 1.0f);
 }

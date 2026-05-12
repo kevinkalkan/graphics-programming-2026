@@ -68,7 +68,9 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
 
 vec3 GetAmbientReflection(vec3 objectColor)
 {
-	return AmbientColor * objectColor * 0.1f;
+	vec3 F0 = mix(vec3(0.04), objectColor, Metallic);
+	vec3 kD = (1.0 - F0) * (1.0 - Metallic);
+	return AmbientColor * kD * objectColor * 0.1;
 }
 
 vec3 GetCookTorranceReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector, float pixelRoughness) 
