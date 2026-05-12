@@ -24,6 +24,9 @@ ViewerApplication::ViewerApplication()
 	, m_metallic(0.0f)
 	, m_shaderMode(0)
 	, m_modeToggled(false)
+    , m_time(0.0f)
+	, m_effectMode(0)
+	, m_effectToggled(false)
 {
 }
 
@@ -33,6 +36,7 @@ void ViewerApplication::Initialize()
 
     // Initialize DearImGUI
     m_imGui.Initialize(GetMainWindow());
+	static float time = 0.0f;
 
     InitializeMaterials();
     InitializeCamera();
@@ -51,6 +55,9 @@ void ViewerApplication::Update()
     // Update camera controller
     UpdateCamera();
 
+    static float time = 0.0f;
+    time += GetDeltaTime();
+
     Window& window = GetMainWindow();
     bool mPressed = window.IsKeyPressed(GLFW_KEY_M);
 
@@ -61,9 +68,24 @@ void ViewerApplication::Update()
     }
     m_modeToggled = mPressed;
 
+    bool lPressed = window.IsKeyPressed(GLFW_KEY_L);
+    if (lPressed && !m_effectToggled)
+    {
+        m_effectMode++;
+        if (m_effectMode > 2) { 
+            m_effectMode = 0;
+        }
+    }
+    m_effectToggled = lPressed;
     // Keep PBR sliders updated dynamically
-    m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
-    m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
+    for (unsigned int i = 0; i < m_modelPBR.GetMaterialCount(); ++i)
+    {
+        m_modelPBR.GetMaterial(i).SetUniformValue("Roughness", m_roughness);
+        m_modelPBR.GetMaterial(i).SetUniformValue("Metallic", m_metallic);
+        m_modelPBR.GetMaterial(i).SetUniformValue("Time", time);
+        m_modelPBR.GetMaterial(i).SetUniformValue("EffectMode", m_effectMode);
+    }
+   
 }
 
 void ViewerApplication::Render()
@@ -156,19 +178,20 @@ void ViewerApplication::InitializeModel()
     auto colorTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_BaseColor.png");
     auto roughnessTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png");
     auto normalTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Normal.png");
+    auto emissiveTex = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Emissive.png");
 
     // 3. Apply variables to PBR Model
     m_modelPBR.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("NormalTexture", normalTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
-    m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
-    m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
+    m_modelPBR.GetMaterial(0).SetUniformValue("EmissiveTexture", emissiveTex);
 
     // 4. Apply variables to Blinn-Phong Model
     m_modelBlinn.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
     m_modelBlinn.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
     m_modelBlinn.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
+    
 }
 void ViewerApplication::InitializeCamera()
 {
@@ -217,6 +240,12 @@ void ViewerApplication::RenderGUI()
     ImGui::Text("Shader Swap (Press 'M')");
     ImGui::RadioButton("Cook-Torrance (PBR)", &m_shaderMode, 0);
     ImGui::RadioButton("Blinn-Phong", &m_shaderMode, 1);
+    ImGui::Separator();
+
+    ImGui::Text("RGB Effects (Press 'L')");
+    ImGui::RadioButton("Off", &m_effectMode, 0);
+    ImGui::RadioButton("Breathing", &m_effectMode, 1);
+    ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);
     ImGui::Separator();
 
     m_imGui.EndFrame();

@@ -62,4 +62,8 @@ private:
     // Shader modes
 	int m_shaderMode;
 	bool m_modeToggled;
+
+	float m_time;
+	int m_effectMode;
+	bool m_effectToggled;
 };
