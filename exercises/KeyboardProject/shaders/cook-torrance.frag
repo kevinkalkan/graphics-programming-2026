@@ -25,6 +25,7 @@ uniform sampler2D EmissiveTexture;
 uniform int EffectMode;
 uniform float WaveSpeed;
 uniform int WaveDirection;
+uniform float GlowIntensity;
 
 const float PI = 3.14159265359;
 
@@ -139,11 +140,14 @@ void main()
 	}
 	else if (EffectMode == 2) // Rainbow effect
 	{
-		float waveDensity = 1.0;
+		float effectDirection = (WaveDirection == 0) ? WorldPosition.x : WorldPosition.z;
 
-		float effectDirection = (WaveDirection == 0) ? TexCoord.x : TexCoord.y;
-		float currentHue = (effectDirection * waveDensity) - (Time * WaveSpeed);
-		glowColor = hsv2rgb(vec3(currentHue, 1.0, 1.0)) * 0.5;
+		float waveDensity = 0.7;
+		effectDirection *= waveDensity;
+
+		float currentHue = fract(effectDirection - (Time * WaveSpeed));
+
+		glowColor += hsv2rgb(vec3(currentHue, 1.0, 1.0)) * 0.5;
 	}
 	else if (EffectMode == 3) // 
 	{
@@ -159,7 +163,7 @@ void main()
 		glowColor = hsv2rgb(vec3(hue, 1.0, 1.0)) * intensity * 0.5;
 	}
 
-	finalColor += glowColor * glowMask;
+	finalColor += (glowColor * GlowIntensity) * glowMask;
 
 	finalColor = finalColor / (finalColor + vec3(1.0));
 	finalColor = pow(finalColor, vec3(1.0/2.2));

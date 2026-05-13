@@ -68,4 +68,5 @@ private:
 	bool m_effectToggled;
 	float m_waveSpeed;
 	int m_waveDirection;
+	float m_glowIntensity;
 };
