@@ -149,7 +149,7 @@ void main()
 
 		glowColor += hsv2rgb(vec3(currentHue, 1.0, 1.0)) * 0.5;
 	}
-	else if (EffectMode == 3) // 
+	else if (EffectMode == 3) // Cycle effect
 	{
 		float cycleTimer = Time * WaveSpeed;
 

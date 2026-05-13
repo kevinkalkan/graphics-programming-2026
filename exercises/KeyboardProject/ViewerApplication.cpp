@@ -174,7 +174,7 @@ Model ViewerApplication::LoadModelWithShader(const char* vertPath, const char* f
 
 void ViewerApplication::InitializeModel()
 {
-    // 1. Load the two models using the helper function
+    // 1. Load the two models
     m_modelPBR = LoadModelWithShader("shaders/cook-torrance.vert", "shaders/cook-torrance.frag");
     m_modelBlinn = LoadModelWithShader("shaders/blinn-phong.vert", "shaders/blinn-phong.frag");
 
