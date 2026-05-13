@@ -67,4 +67,5 @@ private:
 	int m_effectMode;
 	bool m_effectToggled;
 	float m_waveSpeed;
+	int m_waveDirection;
 };

@@ -28,6 +28,7 @@ ViewerApplication::ViewerApplication()
 	, m_effectMode(0)
 	, m_effectToggled(false)
 	, m_waveSpeed(0.5f)
+	, m_waveDirection(0)
 {
 }
 
@@ -73,7 +74,7 @@ void ViewerApplication::Update()
     if (lPressed && !m_effectToggled)
     {
         m_effectMode++;
-        if (m_effectMode > 2) { 
+        if (m_effectMode > 3) { 
             m_effectMode = 0;
         }
     }
@@ -86,6 +87,7 @@ void ViewerApplication::Update()
         m_modelPBR.GetMaterial(i).SetUniformValue("Time", time);
         m_modelPBR.GetMaterial(i).SetUniformValue("EffectMode", m_effectMode);
         m_modelPBR.GetMaterial(i).SetUniformValue("WaveSpeed", m_waveSpeed);
+        m_modelPBR.GetMaterial(i).SetUniformValue("WaveDirection", m_waveDirection);
     }
    
 }
@@ -233,10 +235,14 @@ void ViewerApplication::RenderGUI()
     ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
     ImGui::Separator();
 
-    if (ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f))
-        m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
-	if (ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f))
-        m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
+
+	ImGui::Text("Material Properties");
+    ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f);
+    ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f);
+   // if (ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f))
+       // m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
+//	if (ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f))
+      //  m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
     ImGui::Separator();
 
     ImGui::Text("Shader Swap (Press 'M')");
@@ -248,6 +254,14 @@ void ViewerApplication::RenderGUI()
     ImGui::RadioButton("Off", &m_effectMode, 0);
     ImGui::RadioButton("Breathing", &m_effectMode, 1);
     ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);
+	ImGui::RadioButton("Cycle", &m_effectMode, 3);
+	if (m_effectMode == 2) 
+    {
+		ImGui::Text("Wave Direction");
+		ImGui::RadioButton("Horizontal", &m_waveDirection, 0);
+		ImGui::SameLine();
+		ImGui::RadioButton("Vertical", &m_waveDirection, 1);
+    }
     if (ImGui::SliderFloat("Wave Speed", &m_waveSpeed, 0.0f, 5.0f))
         m_modelPBR.GetMaterial(0).SetUniformValue("WaveSpeed", m_waveSpeed);
     ImGui::Separator();
