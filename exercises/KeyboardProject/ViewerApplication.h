@@ -70,4 +70,5 @@ private:
 	int m_waveDirection;
 	float m_glowIntensity;
 
+    float m_heightScale;
 };

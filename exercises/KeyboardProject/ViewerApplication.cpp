@@ -30,6 +30,7 @@ ViewerApplication::ViewerApplication()
 	, m_effectSpeed(0.5f)
 	, m_waveDirection(0)
 	, m_glowIntensity(1.0f)
+    , m_heightScale(0.02f)
 {
 }
 
@@ -90,6 +91,7 @@ void ViewerApplication::Update()
 		m_modelPBR.GetMaterial(i).SetUniformValue("EffectSpeed", m_effectSpeed);
         m_modelPBR.GetMaterial(i).SetUniformValue("WaveDirection", m_waveDirection);
 		m_modelPBR.GetMaterial(i).SetUniformValue("GlowIntensity", m_glowIntensity);
+		m_modelPBR.GetMaterial(i).SetUniformValue("HeightScale", m_heightScale);
     }
    
 }
@@ -185,6 +187,7 @@ void ViewerApplication::InitializeModel()
     auto roughnessTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png");
     auto normalTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Normal.png");
     auto emissiveTex = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Emissive.png");
+	auto heightTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Height.png");
 
     // 3. Apply variables to PBR Model
     m_modelPBR.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
@@ -192,6 +195,7 @@ void ViewerApplication::InitializeModel()
     m_modelPBR.GetMaterial(0).SetUniformValue("NormalTexture", normalTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
     m_modelPBR.GetMaterial(0).SetUniformValue("EmissiveTexture", emissiveTex);
+	m_modelPBR.GetMaterial(0).SetUniformValue("HeightTexture", heightTexture);
 
     // 4. Apply variables to Blinn-Phong Model
     m_modelBlinn.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
@@ -240,13 +244,13 @@ void ViewerApplication::RenderGUI()
     ImGui::Separator();
 
     ImGui::Text("Material Properties");
-
     ImGui::Text("Shader Swap (Press 'M')");
     ImGui::RadioButton("Cook-Torrance (PBR)", &m_shaderMode, 0);
     if(m_shaderMode == 0)
     {
         ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f);
         ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f);
+        ImGui::SliderFloat("Engraving Depth", &m_heightScale, 0.0f, 0.04f);
     }
     ImGui::RadioButton("Blinn-Phong", &m_shaderMode, 1);
     ImGui::Separator();
