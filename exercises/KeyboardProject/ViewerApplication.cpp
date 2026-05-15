@@ -27,7 +27,7 @@ ViewerApplication::ViewerApplication()
     , m_time(0.0f)
 	, m_effectMode(0)
 	, m_effectToggled(false)
-	, m_waveSpeed(0.5f)
+	, m_effectSpeed(0.5f)
 	, m_waveDirection(0)
 	, m_glowIntensity(1.0f)
 {
@@ -87,7 +87,7 @@ void ViewerApplication::Update()
         m_modelPBR.GetMaterial(i).SetUniformValue("Metallic", m_metallic);
         m_modelPBR.GetMaterial(i).SetUniformValue("Time", time);
         m_modelPBR.GetMaterial(i).SetUniformValue("EffectMode", m_effectMode);
-		m_modelPBR.GetMaterial(i).SetUniformValue("WaveSpeed", m_waveSpeed);
+		m_modelPBR.GetMaterial(i).SetUniformValue("EffectSpeed", m_effectSpeed);
         m_modelPBR.GetMaterial(i).SetUniformValue("WaveDirection", m_waveDirection);
 		m_modelPBR.GetMaterial(i).SetUniformValue("GlowIntensity", m_glowIntensity);
     }
@@ -237,39 +237,41 @@ void ViewerApplication::RenderGUI()
     ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
     ImGui::Separator();
 
-
-	ImGui::Text("Material Properties");
-    ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f);
-    ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f);
-   // if (ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f))
-       // m_modelPBR.GetMaterial(0).SetUniformValue("Roughness", m_roughness);
-//	if (ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f))
-      //  m_modelPBR.GetMaterial(0).SetUniformValue("Metallic", m_metallic);
     ImGui::Separator();
+
+    ImGui::Text("Material Properties");
 
     ImGui::Text("Shader Swap (Press 'M')");
     ImGui::RadioButton("Cook-Torrance (PBR)", &m_shaderMode, 0);
+    if(m_shaderMode == 0)
+    {
+        ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f);
+        ImGui::SliderFloat("Metallic", &m_metallic, 0.0f, 1.0f);
+    }
     ImGui::RadioButton("Blinn-Phong", &m_shaderMode, 1);
     ImGui::Separator();
 
     ImGui::Text("RGB Effects (Press 'L')");
     ImGui::RadioButton("Off", &m_effectMode, 0);
-    ImGui::RadioButton("Breathing", &m_effectMode, 1);
-    ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);
-	ImGui::RadioButton("Cycle", &m_effectMode, 3);
-	if (m_effectMode == 2) 
+    if(!m_effectMode == 0)
     {
-		ImGui::Text("Wave Direction");
-		ImGui::RadioButton("Horizontal", &m_waveDirection, 0);
-		ImGui::SameLine();
-		ImGui::RadioButton("Vertical", &m_waveDirection, 1);
-    }
-    if (ImGui::SliderFloat("Wave Speed", &m_waveSpeed, 0.0f, 1.0f))
-        m_modelPBR.GetMaterial(0).SetUniformValue("WaveSpeed", m_waveSpeed);
-   
-    ImGui::SliderFloat("Glow Intensity", &m_glowIntensity, 0.0f, 5.0f);
-    ImGui::Separator();
+        ImGui::RadioButton("Breathing", &m_effectMode, 1);
+        ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);
+        ImGui::RadioButton("Cycle", &m_effectMode, 3);
+        if (m_effectMode == 2)
+        {
+            ImGui::Text("Wave Direction");
+            ImGui::RadioButton("Horizontal", &m_waveDirection, 0);
+            ImGui::SameLine();
+            ImGui::RadioButton("Vertical", &m_waveDirection, 1);
+        }
+        if (ImGui::SliderFloat("Effect Speed", &m_effectSpeed, 0.0f, 1.0f))
+            m_modelPBR.GetMaterial(0).SetUniformValue("EffectSpeed", m_effectSpeed);
 
+        ImGui::SliderFloat("Glow Intensity", &m_glowIntensity, 0.0f, 5.0f);
+    }
+    
+    ImGui::Separator();
     m_imGui.EndFrame();
 }
 

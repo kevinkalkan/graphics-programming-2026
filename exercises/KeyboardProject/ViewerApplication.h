@@ -66,7 +66,12 @@ private:
 	float m_time;
 	int m_effectMode;
 	bool m_effectToggled;
-	float m_waveSpeed;
+	float m_effectSpeed;
 	int m_waveDirection;
 	float m_glowIntensity;
+
+    // Post-Processing Handles
+	//unsigned int m_hdrFBO;
+	//unsigned int m_hdrColorBuffer;
+	//unsigned int m_brightColorBuffer;
 };

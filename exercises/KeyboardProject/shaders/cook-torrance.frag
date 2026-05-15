@@ -23,7 +23,7 @@ uniform vec3 CameraPosition;
 uniform float Time;
 uniform sampler2D EmissiveTexture;
 uniform int EffectMode;
-uniform float WaveSpeed;
+uniform float EffectSpeed;
 uniform int WaveDirection;
 uniform float GlowIntensity;
 
@@ -145,13 +145,13 @@ void main()
 		float waveDensity = 0.7;
 		effectDirection *= waveDensity;
 
-		float currentHue = fract(effectDirection - (Time * WaveSpeed));
+		float currentHue = fract(effectDirection - (Time * EffectSpeed));
 
 		glowColor += hsv2rgb(vec3(currentHue, 1.0, 1.0)) * 0.5;
 	}
 	else if (EffectMode == 3) // Cycle effect
 	{
-		float cycleTimer = Time * WaveSpeed;
+		float cycleTimer = Time * EffectSpeed;
 
 		float phase = fract(cycleTimer);
 		float intensity = (sin(phase * 2.0 * PI - (PI / 2.0)) + 1.0) * 0.5;
