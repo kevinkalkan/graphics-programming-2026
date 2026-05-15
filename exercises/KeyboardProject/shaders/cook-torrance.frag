@@ -17,11 +17,12 @@ uniform float Roughness;
 uniform float Metallic;
 uniform float HeightScale;
 
-uniform sampler2D RoughnessTexture;
+//uniform sampler2D RoughnessTexture;
 uniform sampler2D NormalTexture;
-uniform sampler2D EmissiveTexture;
+//uniform sampler2D EmissiveTexture;
 uniform sampler2D ColorTexture;
-uniform sampler2D HeightTexture;
+//uniform sampler2D HeightTexture;
+uniform sampler2D PackedTexture;
 
 uniform int EffectMode;
 uniform float EffectSpeed;
@@ -118,29 +119,32 @@ void main()
 	vec3 B = cross(N, T);
 	mat3 TBN = mat3(T, B, N);
 
+
 	mat3 invTBN = transpose(TBN);
 	vec3 tangentCameraPos = invTBN * CameraPosition;
 	vec3 tangentFragPos = invTBN * WorldPosition;
 	vec3 tangentViewDir = normalize(tangentCameraPos - tangentFragPos);
 
-	float height = texture(HeightTexture, TexCoord).r;
+
+	float height = texture(PackedTexture, TexCoord).b;
 	vec2 shift = tangentViewDir.xy * ((1.0-height) * HeightScale);
 	vec2 finalTexCoord = TexCoord - shift;
 
+	vec3 packedData = texture(PackedTexture, finalTexCoord).rgb;
+	float glowMask = packedData.r;
+	float finalRoughness = Roughness * packedData.g;
+
 	vec4 texColor = texture(ColorTexture, finalTexCoord);
-	vec3 objectColor = pow(Color.rgb * texColor.rgb, vec3(2.2)); 
+	vec3 objectColor = pow(texColor.rgb, vec3(2.2)); 
 
-	float finalRoughness = Roughness * texture(RoughnessTexture, finalTexCoord).r;
+	vec2 texelSize = 1.0 / textureSize(PackedTexture, 0);
 
-	vec2 texelSize = 1.0 / textureSize(HeightTexture, 0);
-
-	float heightL = texture(HeightTexture, finalTexCoord - vec2(texelSize.x, 0.0)).r;
-	float heightR = texture(HeightTexture, finalTexCoord + vec2(texelSize.x, 0.0)).r;
-	float heightD = texture(HeightTexture, finalTexCoord - vec2(0.0, texelSize.y)).r;
-	float heightU = texture(HeightTexture, finalTexCoord + vec2(0.0, texelSize.y)).r;
+	float heightL = texture(PackedTexture, finalTexCoord - vec2(texelSize.x, 0.0)).r;
+	float heightR = texture(PackedTexture, finalTexCoord + vec2(texelSize.x, 0.0)).r;
+	float heightD = texture(PackedTexture, finalTexCoord - vec2(0.0, texelSize.y)).r;
+	float heightU = texture(PackedTexture, finalTexCoord + vec2(0.0, texelSize.y)).r;
 
 	vec3 generatedNormal = normalize(vec3(heightL - heightR, heightD - heightU, 2.0));
-
 	vec3 finalWorldNormal = normalize(TBN * generatedNormal);
 
 	//vec3 normalMap = texture(NormalTexture, finalTexCoord).rgb;
@@ -152,7 +156,7 @@ void main()
 
 	vec3 finalColor = GetAmbientReflection(objectColor) + GetCookTorranceReflection(objectColor, lightVector, viewVector, finalWorldNormal, finalRoughness);
 
-	float glowMask = texture(EmissiveTexture, finalTexCoord).r;
+
 	vec3 glowColor = vec3(0.0);
 
 	if (EffectMode == 1) // Breathing effect

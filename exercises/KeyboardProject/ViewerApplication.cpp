@@ -30,7 +30,7 @@ ViewerApplication::ViewerApplication()
 	, m_effectSpeed(0.5f)
 	, m_waveDirection(0)
 	, m_glowIntensity(1.0f)
-    , m_heightScale(0.02f)
+    , m_heightScale(0.0f)
 {
 }
 
@@ -184,22 +184,24 @@ void ViewerApplication::InitializeModel()
     Texture2DLoader textureLoader(TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA8);
     textureLoader.SetFlipVertical(true);
     auto colorTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_BaseColor.png");
-    auto roughnessTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png");
+  //  auto roughnessTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Roughness.png");
     auto normalTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Normal.png");
-    auto emissiveTex = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Emissive.png");
-	auto heightTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Height.png");
+ //   auto emissiveTex = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Emissive.png");
+//	auto heightTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_Height.png");
+	auto packedTexture = textureLoader.LoadShared("models/keyboard/Keyboard2_DefaultMaterial_PackedMap.png");
 
     // 3. Apply variables to PBR Model
     m_modelPBR.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
-    m_modelPBR.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
+   // m_modelPBR.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("NormalTexture", normalTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
-    m_modelPBR.GetMaterial(0).SetUniformValue("EmissiveTexture", emissiveTex);
-	m_modelPBR.GetMaterial(0).SetUniformValue("HeightTexture", heightTexture);
+    m_modelPBR.GetMaterial(0).SetUniformValue("PackedTexture", packedTexture);
+  //  m_modelPBR.GetMaterial(0).SetUniformValue("EmissiveTexture", emissiveTex);
+	//m_modelPBR.GetMaterial(0).SetUniformValue("HeightTexture", heightTexture);
 
     // 4. Apply variables to Blinn-Phong Model
     m_modelBlinn.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
-    m_modelBlinn.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
+   // m_modelBlinn.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
     m_modelBlinn.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
     
 }
