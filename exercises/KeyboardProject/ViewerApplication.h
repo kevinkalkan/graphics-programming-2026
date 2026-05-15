@@ -70,8 +70,4 @@ private:
 	int m_waveDirection;
 	float m_glowIntensity;
 
-    // Post-Processing Handles
-	//unsigned int m_hdrFBO;
-	//unsigned int m_hdrColorBuffer;
-	//unsigned int m_brightColorBuffer;
 };
