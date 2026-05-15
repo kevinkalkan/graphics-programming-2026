@@ -139,10 +139,10 @@ void main()
 
 	vec2 texelSize = 1.0 / textureSize(PackedTexture, 0);
 
-	float heightL = texture(PackedTexture, finalTexCoord - vec2(texelSize.x, 0.0)).r;
-	float heightR = texture(PackedTexture, finalTexCoord + vec2(texelSize.x, 0.0)).r;
-	float heightD = texture(PackedTexture, finalTexCoord - vec2(0.0, texelSize.y)).r;
-	float heightU = texture(PackedTexture, finalTexCoord + vec2(0.0, texelSize.y)).r;
+	float heightL = texture(PackedTexture, finalTexCoord - vec2(texelSize.x, 0.0)).b;
+	float heightR = texture(PackedTexture, finalTexCoord + vec2(texelSize.x, 0.0)).b;
+	float heightD = texture(PackedTexture, finalTexCoord - vec2(0.0, texelSize.y)).b;
+	float heightU = texture(PackedTexture, finalTexCoord + vec2(0.0, texelSize.y)).b;
 
 	vec3 generatedNormal = normalize(vec3(heightL - heightR, heightD - heightU, 2.0));
 	vec3 finalWorldNormal = normalize(TBN * generatedNormal);
