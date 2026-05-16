@@ -23,8 +23,8 @@ private:
     void InitializeModel();
     void InitializeCamera();
     void InitializeLights();
-	void InitializeMaterials();
-    Model LoadModelWithShader(const char* vertPath, const char* fragPath);
+	void InitializeMaterials(); 
+	Model LoadModelWithShader(const char* vertPath, const char* fragPath); // Helper function to load a model with a specific shader and set up the material
 
     void UpdateCamera();
 
@@ -63,12 +63,16 @@ private:
 	int m_shaderMode;
 	bool m_modeToggled;
 
-	float m_time;
+	// Time variable for RGB effects
+    float m_time;
+
+	// RGB effect modes
 	int m_effectMode;
 	bool m_effectToggled;
 	float m_effectSpeed;
 	int m_waveDirection;
 	float m_glowIntensity;
 
+	// Height scale for parallax mapping
     float m_heightScale;
 };

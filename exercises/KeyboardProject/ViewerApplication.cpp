@@ -11,7 +11,7 @@
 ViewerApplication::ViewerApplication()
     : Application(1024, 1024, "Viewer demo")
     , m_cameraPosition(0, 1.0f, 1.0f)
-    , m_cameraTranslationSpeed(20.0f)
+    , m_cameraTranslationSpeed(5.0f)
     , m_cameraRotationSpeed(0.5f)
     , m_cameraEnabled(false)
     , m_cameraEnablePressed(false)
@@ -81,7 +81,7 @@ void ViewerApplication::Update()
         }
     }
     m_effectToggled = lPressed;
-    // Keep PBR sliders updated dynamically
+    // PBR shader uniform updates
     for (unsigned int i = 0; i < m_modelPBR.GetMaterialCount(); ++i)
     {
         m_modelPBR.GetMaterial(i).SetUniformValue("Roughness", m_roughness);
@@ -131,6 +131,7 @@ Model ViewerApplication::LoadModelWithShader(const char* vertPath, const char* f
     std::shared_ptr<ShaderProgram> shaderProgram = std::make_shared<ShaderProgram>();
     shaderProgram->Build(vertexShader, fragmentShader);
 
+	// Filter uniforms
     ShaderUniformCollection::NameSet filteredUniforms;
     filteredUniforms.insert("WorldMatrix");
     filteredUniforms.insert("ViewProjMatrix");
@@ -147,6 +148,7 @@ Model ViewerApplication::LoadModelWithShader(const char* vertPath, const char* f
     material->SetUniformValue("SpecularReflection", 1.0f);
     material->SetUniformValue("SpecularExponent", 1.0f);
 
+	// Setup function
     ShaderProgram::Location worldMatrixLocation = shaderProgram->GetUniformLocation("WorldMatrix");
     ShaderProgram::Location viewProjMatrixLocation = shaderProgram->GetUniformLocation("ViewProjMatrix");
     ShaderProgram::Location ambientColorLocation = shaderProgram->GetUniformLocation("AmbientColor");
@@ -192,16 +194,17 @@ void ViewerApplication::InitializeModel()
 
     // 3. Apply variables to PBR Model
     m_modelPBR.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
-   // m_modelPBR.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("NormalTexture", normalTexture);
     m_modelPBR.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
     m_modelPBR.GetMaterial(0).SetUniformValue("PackedTexture", packedTexture);
-  //  m_modelPBR.GetMaterial(0).SetUniformValue("EmissiveTexture", emissiveTex);
-	//m_modelPBR.GetMaterial(0).SetUniformValue("HeightTexture", heightTexture);
+
+	// If separate textures are used instead of a packed map, they can be set like this:
+    // m_modelPBR.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
+    // m_modelPBR.GetMaterial(0).SetUniformValue("EmissiveTexture", emissiveTex);
+	// m_modelPBR.GetMaterial(0).SetUniformValue("HeightTexture", heightTexture);
 
     // 4. Apply variables to Blinn-Phong Model
     m_modelBlinn.GetMaterial(0).SetUniformValue("ColorTexture", colorTexture);
-   // m_modelBlinn.GetMaterial(0).SetUniformValue("RoughnessTexture", roughnessTexture);
     m_modelBlinn.GetMaterial(0).SetUniformValue("Color", glm::vec4(1.0f));
     
 }
@@ -243,11 +246,10 @@ void ViewerApplication::RenderGUI()
     ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
     ImGui::Separator();
 
-    ImGui::Separator();
-
-    ImGui::Text("Material Properties");
+	// Shader mode controls
     ImGui::Text("Shader Swap (Press 'M')");
     ImGui::RadioButton("Cook-Torrance (PBR)", &m_shaderMode, 0);
+	// Only show PBR parameters if Cook-Torrance shader is active
     if(m_shaderMode == 0)
     {
         ImGui::SliderFloat("Roughness", &m_roughness, 0.0f, 1.0f);
@@ -257,9 +259,10 @@ void ViewerApplication::RenderGUI()
     ImGui::RadioButton("Blinn-Phong", &m_shaderMode, 1);
     ImGui::Separator();
 
+	// RGB effect controls
     ImGui::Text("RGB Effects (Press 'L')");
     ImGui::RadioButton("Off", &m_effectMode, 0);
-    if(!m_effectMode == 0)
+    if(m_effectMode != 0)
     {
         ImGui::RadioButton("Breathing", &m_effectMode, 1);
         ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);

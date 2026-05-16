@@ -17,17 +17,17 @@ uniform float Roughness;
 uniform float Metallic;
 uniform float HeightScale;
 
-//uniform sampler2D RoughnessTexture;
 uniform sampler2D NormalTexture;
-//uniform sampler2D EmissiveTexture;
 uniform sampler2D ColorTexture;
 //uniform sampler2D HeightTexture;
+//uniform sampler2D RoughnessTexture;
+//uniform sampler2D EmissiveTexture;  // These texture maps are packed into the RGB channels of PackedTexture
 uniform sampler2D PackedTexture;
 
 uniform int EffectMode;
 uniform float EffectSpeed;
-uniform int WaveDirection;
-uniform float GlowIntensity;
+uniform int WaveDirection; // 0 for X-axis, 1 for Z-axis
+uniform float GlowIntensity; // Overall intensity of the glow effect
 
 uniform float Time;
 
@@ -35,23 +35,16 @@ const float PI = 3.14159265359;
 
 float DistributionGGX(vec3 normalVector, vec3 halfVector, float roughness) 
 {
-	float a = roughness * roughness;
-	float a2 = a * a;
+	float a2 = pow(roughness, 4.0);
 	float NdotH = max(dot(normalVector, halfVector), 0.0);
-	float NdotH2 = NdotH * NdotH;
+	float denom = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
 
-	float nom   = a2;
-	float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-	denom = PI * denom * denom;
-
-	return nom / denom;
+	return a2 / (PI * denom * denom);
 }
 
 float GeometrySchlickGGX(float NdotV, float roughness) 
 {
-	float r = (roughness + 1.0);
-	float k = (r * r) / 8.0;
-
+	float k    = pow(roughness + 1.0, 2.0) / 8.0;
 	float nom   = NdotV;
 	float denom = NdotV * (1.0 - k) + k;
 
@@ -85,7 +78,6 @@ vec3 GetAmbientReflection(vec3 objectColor)
 vec3 GetCookTorranceReflection(vec3 objectColor, vec3 lightVector, vec3 viewVector, vec3 normalVector, float pixelRoughness) 
 {
 	vec3 halfVector = normalize(lightVector + viewVector);
-
 	vec3 F0 = mix(vec3(0.04f), objectColor, Metallic);
 
 	float NDF = DistributionGGX(normalVector, halfVector, pixelRoughness);
@@ -96,15 +88,13 @@ vec3 GetCookTorranceReflection(vec3 objectColor, vec3 lightVector, vec3 viewVect
 	float denominator = 4.0 * max(dot(normalVector, viewVector), 0.0) * max(dot(normalVector, lightVector), 0.0) + 0.001;
 	vec3 specular = nominator / denominator;
 
-	vec3 kS = F;
-	vec3 kD = vec3(1.0) - kS;
-	kD *= 1.0 - Metallic;
+	vec3 kD = (vec3(1.0) - F) * (1.0 - Metallic);
 
 	float NdotL = max(dot(normalVector, lightVector), 0.0);
 	return (kD * objectColor / PI + specular) * LightColor * NdotL;
 }
 
-vec3 hsv2rgb(vec3 c) 
+vec3 hsv2rgb(vec3 c)  // Convert HSV to RGB
 {
 	vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
 	vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
@@ -113,32 +103,37 @@ vec3 hsv2rgb(vec3 c)
 
 void main()
 {
+	// Construct TBN matrix
 	vec3 N = normalize(WorldNormal);
 	vec3 T = normalize(WorldTangent);
 	T = normalize(T - dot(T, N) * N);
 	vec3 B = cross(N, T);
 	mat3 TBN = mat3(T, B, N);
 
-
+	// Transform camera position and fragment position to tangent space
 	mat3 invTBN = transpose(TBN);
 	vec3 tangentCameraPos = invTBN * CameraPosition;
 	vec3 tangentFragPos = invTBN * WorldPosition;
 	vec3 tangentViewDir = normalize(tangentCameraPos - tangentFragPos);
 
-
+	// Parallax Mapping
 	float height = texture(PackedTexture, TexCoord).b;
-	vec2 shift = tangentViewDir.xy * ((1.0-height) * HeightScale);
+	vec2 shift = (tangentViewDir.xy / tangentViewDir.z) * ((1.0-height) * HeightScale);
 	vec2 finalTexCoord = TexCoord - shift;
 
+	// Sample packed texture for glow mask and roughness
 	vec3 packedData = texture(PackedTexture, finalTexCoord).rgb;
 	float glowMask = packedData.r;
 	float finalRoughness = Roughness * packedData.g;
 
+	// Sample color texture and apply gamma correction to get linear color space
 	vec4 texColor = texture(ColorTexture, finalTexCoord);
 	vec3 objectColor = pow(texColor.rgb, vec3(2.2)); 
 
+	// Generate normals from height map 
 	vec2 texelSize = 1.0 / textureSize(PackedTexture, 0);
 
+	// Sample heights from neighboring texels
 	float heightL = texture(PackedTexture, finalTexCoord - vec2(texelSize.x, 0.0)).b;
 	float heightR = texture(PackedTexture, finalTexCoord + vec2(texelSize.x, 0.0)).b;
 	float heightD = texture(PackedTexture, finalTexCoord - vec2(0.0, texelSize.y)).b;
@@ -147,18 +142,20 @@ void main()
 	vec3 generatedNormal = normalize(vec3(heightL - heightR, heightD - heightU, 2.0));
 	vec3 finalWorldNormal = normalize(TBN * generatedNormal);
 
-	//vec3 normalMap = texture(NormalTexture, finalTexCoord).rgb;
-	//normalMap = normalize(normalMap * 2.0 - 1.0);
+	// Sample normal map and transform to world space -- Without 
+	//vec3 normalMap = texture(NormalTexture, finalTexCoord).rgb; 
+	//normalMap = normalize(normalMap * 2.0 - 1.0); 
 	//vec3 normalVector = normalize(TBN * normalMap);
 
+	// Calculate lighting vectors
 	vec3 lightVector = normalize(LightPosition - WorldPosition);
 	vec3 viewVector = normalize(CameraPosition - WorldPosition);
-
+	
 	vec3 finalColor = GetAmbientReflection(objectColor) + GetCookTorranceReflection(objectColor, lightVector, viewVector, finalWorldNormal, finalRoughness);
-
-
+	
+	// Apply glow effects based on the selected mode
 	vec3 glowColor = vec3(0.0);
-
+	
 	if (EffectMode == 1) // Breathing effect
 	{
 		float breathingIntensity = (sin(Time * 3.0) + 1.0) * 0.5;
@@ -189,10 +186,13 @@ void main()
 		glowColor = hsv2rgb(vec3(hue, 1.0, 1.0)) * intensity * 0.5;
 	}
 
+	// Combine glow color with the base color using the glow mask and intensity
 	finalColor += (glowColor * GlowIntensity) * glowMask;
 
-	finalColor = finalColor / (finalColor + vec3(1.0));
-	finalColor = pow(finalColor, vec3(1.0/2.2));
+	// Apply tone mapping and gamma correction
+	finalColor = finalColor / (finalColor + vec3(1.0)); 
+	finalColor = pow(finalColor, vec3(1.0/2.2));	
+
 
 	FragColor = vec4(finalColor, texColor.a);
 	
