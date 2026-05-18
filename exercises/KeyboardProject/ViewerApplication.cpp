@@ -268,7 +268,8 @@ void ViewerApplication::RenderGUI()
     if(m_effectMode != 0)
     {
         ImGui::RadioButton("Breathing", &m_effectMode, 1);
-        ImGui::ColorEdit3("Breathing Color", &m_breathingColor[0]);
+		if (m_effectMode == 1)
+            ImGui::ColorEdit3("Breathing Color", &m_breathingColor[0]);
         ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);
         ImGui::RadioButton("Cycle", &m_effectMode, 3);
         if (m_effectMode == 2)
