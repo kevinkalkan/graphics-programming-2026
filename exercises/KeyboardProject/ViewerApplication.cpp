@@ -31,6 +31,7 @@ ViewerApplication::ViewerApplication()
 	, m_waveDirection(0)
 	, m_glowIntensity(1.0f)
     , m_heightScale(0.0f)
+    , m_breathingColor(0.0f, 1.0f, 1.0f) // Cyan default color for breathing effect
 {
 }
 
@@ -91,6 +92,7 @@ void ViewerApplication::Update()
 		m_modelPBR.GetMaterial(i).SetUniformValue("EffectSpeed", m_effectSpeed);
         m_modelPBR.GetMaterial(i).SetUniformValue("WaveDirection", m_waveDirection);
 		m_modelPBR.GetMaterial(i).SetUniformValue("GlowIntensity", m_glowIntensity);
+        m_modelPBR.GetMaterial(i).SetUniformValue("BreathingColor", m_breathingColor);
 		m_modelPBR.GetMaterial(i).SetUniformValue("HeightScale", m_heightScale);
     }
    
@@ -249,6 +251,7 @@ void ViewerApplication::RenderGUI()
 	// Shader mode controls
     ImGui::Text("Shader Swap (Press 'M')");
     ImGui::RadioButton("Cook-Torrance (PBR)", &m_shaderMode, 0);
+	ImGui::Text("PBR Parameters");
 	// Only show PBR parameters if Cook-Torrance shader is active
     if(m_shaderMode == 0)
     {
@@ -265,6 +268,7 @@ void ViewerApplication::RenderGUI()
     if(m_effectMode != 0)
     {
         ImGui::RadioButton("Breathing", &m_effectMode, 1);
+        ImGui::ColorEdit3("Breathing Color", &m_breathingColor[0]);
         ImGui::RadioButton("Rainbow Wave", &m_effectMode, 2);
         ImGui::RadioButton("Cycle", &m_effectMode, 3);
         if (m_effectMode == 2)

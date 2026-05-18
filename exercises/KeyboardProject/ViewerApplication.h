@@ -72,6 +72,7 @@ private:
 	float m_effectSpeed;
 	int m_waveDirection;
 	float m_glowIntensity;
+    glm::vec3 m_breathingColor;
 
 	// Height scale for parallax mapping
     float m_heightScale;

@@ -28,6 +28,7 @@ uniform int EffectMode;
 uniform float EffectSpeed;
 uniform int WaveDirection; // 0 for X-axis, 1 for Z-axis
 uniform float GlowIntensity; // Overall intensity of the glow effect
+uniform vec3 BreathingColor;
 
 uniform float Time;
 
@@ -159,7 +160,7 @@ void main()
 	if (EffectMode == 1) // Breathing effect
 	{
 		float breathingIntensity = (sin(Time * 3.0) + 1.0) * 0.5;
-		glowColor = vec3(0.0,1.0,1.0) * breathingIntensity * 0.1;
+		glowColor = BreathingColor * breathingIntensity * 0.1;
 	}
 	else if (EffectMode == 2) // Rainbow effect
 	{
