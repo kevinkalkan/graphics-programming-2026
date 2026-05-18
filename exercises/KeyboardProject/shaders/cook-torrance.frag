@@ -28,7 +28,7 @@ uniform int EffectMode;
 uniform float EffectSpeed;
 uniform int WaveDirection; // 0 for X-axis, 1 for Z-axis
 uniform float GlowIntensity; // Overall intensity of the glow effect
-uniform vec3 BreathingColor;
+uniform vec3 BreathingColor; // Color for the breathing effect, can be set from the application
 
 uniform float Time;
 
