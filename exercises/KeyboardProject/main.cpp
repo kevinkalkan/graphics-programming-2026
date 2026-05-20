@@ -1,7 +1,7 @@
-#include "ViewerApplication.h"
+#include "KeyboardApplication.h"
 
 int main()
 {
-    ViewerApplication viewerApplication;
-    return viewerApplication.Run();
+    KeyboardApplication keyboardApplication;
+    return keyboardApplication.Run();
 }
